@@ -1,4 +1,4 @@
-# Compose convertido/limpiado para Dokploy (supabase_roqe).
+# Compose convertido/limpiado para Dokploy.
 # - Studio ya no depende de analytics (LOGFLARE_URL opcional).
 # - Storage está incluido; para que /storage/v1/ responda, el archivo
 #   ./volumes/api/kong.yml (del repo supabase/supabase) debe contener la ruta
@@ -48,7 +48,7 @@ services:
       - ./volumes/snippets:/app/snippets:Z
       - ./volumes/functions:/app/edge-functions:Z
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   kong:
     container_name: supabase-kong
@@ -72,18 +72,18 @@ services:
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
     entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
     labels:
-      - traefik.http.routers.app-roqe-supabase-tmac3v-6-web.rule=Host(`supabase.fnconsultorias.com.mx`)
-      - traefik.http.routers.app-roqe-supabase-tmac3v-6-web.entrypoints=web
-      - traefik.http.services.app-roqe-supabase-tmac3v-6-web.loadbalancer.server.port=8000
-      - traefik.http.routers.app-roqe-supabase-tmac3v-6-web.service=app-roqe-supabase-tmac3v-6-web
-      - traefik.http.routers.app-roqe-supabase-tmac3v-6-web.middlewares=redirect-to-https@file
-      - traefik.http.routers.app-roqe-supabase-tmac3v-6-websecure.rule=Host(`supabase.fnconsultorias.com.mx`)
-      - traefik.http.routers.app-roqe-supabase-tmac3v-6-websecure.entrypoints=websecure
-      - traefik.http.services.app-roqe-supabase-tmac3v-6-websecure.loadbalancer.server.port=8000
-      - traefik.http.routers.app-roqe-supabase-tmac3v-6-websecure.service=app-roqe-supabase-tmac3v-6-websecure
-      - traefik.http.routers.app-roqe-supabase-tmac3v-6-websecure.tls.certresolver=letsencrypt
+      - traefik.http.routers.supabase-kong-web.rule=Host(`supabase.fnconsultorias.com.mx`)
+      - traefik.http.routers.supabase-kong-web.entrypoints=web
+      - traefik.http.services.supabase-kong-service.loadbalancer.server.port=8000
+      - traefik.http.routers.supabase-kong-web.service=supabase-kong-service
+      - traefik.http.routers.supabase-kong-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.supabase-kong-websecure.rule=Host(`supabase.fnconsultorias.com.mx`)
+      - traefik.http.routers.supabase-kong-websecure.entrypoints=websecure
+      - traefik.http.services.supabase-kong-service.loadbalancer.server.port=8000
+      - traefik.http.routers.supabase-kong-websecure.service=supabase-kong-service
+      - traefik.http.routers.supabase-kong-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
 
   auth:
@@ -130,7 +130,7 @@ services:
       GOTRUE_EXTERNAL_PHONE_ENABLED: ${ENABLE_PHONE_SIGNUP}
       GOTRUE_SMS_AUTOCONFIRM: ${ENABLE_PHONE_AUTOCONFIRM}
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   rest:
     container_name: supabase-rest
@@ -149,7 +149,7 @@ services:
       PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY}
     command: ["postgrest"]
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   realtime:
     container_name: realtime-dev.supabase-realtime
@@ -183,7 +183,7 @@ services:
       RUN_JANITOR: "true"
       DISABLE_HEALTHCHECK_LOGGING: "true"
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   storage:
     container_name: supabase-storage
@@ -227,7 +227,7 @@ services:
     volumes:
       - ./volumes/storage:/var/lib/storage:z
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   imgproxy:
     container_name: supabase-imgproxy
@@ -247,7 +247,7 @@ services:
       IMGPROXY_ENABLE_WEBP_DETECTION: ${IMGPROXY_ENABLE_WEBP_DETECTION:-true}
       IMGPROXY_MAX_SRC_RESOLUTION: "16.8"
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   meta:
     container_name: supabase-meta
@@ -265,7 +265,7 @@ services:
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
       CRYPTO_KEY: ${PG_META_CRYPTO_KEY}
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   functions:
     container_name: supabase-edge-functions
@@ -283,7 +283,7 @@ services:
       VERIFY_JWT: ${FUNCTIONS_VERIFY_JWT:-true}
     command: ["start", "--main-service", "/home/deno/functions/main"]
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   db:
     container_name: supabase-db
@@ -317,7 +317,7 @@ services:
       JWT_EXP: ${JWT_EXPIRY}
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf", "-c", "log_min_messages=fatal"]
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
   supavisor:
     container_name: supabase-pooler
@@ -356,13 +356,12 @@ services:
       DB_POOL_SIZE: ${POOLER_DB_POOL_SIZE}
     command: ["/bin/sh", "-c", "/app/bin/migrate && /app/bin/supavisor eval \"$$(cat /etc/pooler/pooler.exs)\" && /app/bin/server"]
     networks:
-      - app-roqe-supabase-tmac3v
+      - dokploy-network
 
 volumes:
   db-config: null
   deno-cache: null
 
 networks:
-  app-roqe-supabase-tmac3v:
-    name: app-roqe-supabase-tmac3v
+  dokploy-network:
     external: true
