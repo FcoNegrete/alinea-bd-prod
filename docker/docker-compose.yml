@@ -1,12 +1,7 @@
-# Compose convertido/limpiado para Dokploy.
-# - Studio ya no depende de analytics (LOGFLARE_URL opcional).
-# - Storage está incluido; para que /storage/v1/ responda, el archivo
-#   ./volumes/api/kong.yml (del repo supabase/supabase) debe contener la ruta
-#   que enruta /storage/v1/ al servicio storage:5000.
-# - Variables requeridas en .env: POSTGRES_*, ANON_KEY, SERVICE_ROLE_KEY, JWT_SECRET,
-#   SUPABASE_PUBLIC_URL, API_EXTERNAL_URL, SITE_URL, STORAGE_TENANT_ID (ej. "default").
-# - Para usar MinIO/S3 en Storage, añade en .env: STORAGE_BACKEND=s3, STORAGE_S3_*,
-#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (ver docs/STORAGE_DOKPLOY_MINIO_S3.md).
+# Compose convertido y purificado para Dokploy en Producción
+# - Redes estandarizadas a `dokploy-network`.
+# - Traefik enrutado correctamente al dominio real de producción.
+# - Variables de correo expuestas para evitar bloqueos y rate limits.
 
 name: supabase
 
@@ -74,12 +69,12 @@ services:
     networks:
       - dokploy-network
     labels:
-      - traefik.http.routers.supabase-kong-web.rule=Host(`supabase.fnconsultorias.com.mx`)
+      - traefik.http.routers.supabase-kong-web.rule=Host(`alinea-bd-prod.fnconsultorias.com.mx`)
       - traefik.http.routers.supabase-kong-web.entrypoints=web
       - traefik.http.services.supabase-kong-service.loadbalancer.server.port=8000
       - traefik.http.routers.supabase-kong-web.service=supabase-kong-service
       - traefik.http.routers.supabase-kong-web.middlewares=redirect-to-https@file
-      - traefik.http.routers.supabase-kong-websecure.rule=Host(`supabase.fnconsultorias.com.mx`)
+      - traefik.http.routers.supabase-kong-websecure.rule=Host(`alinea-bd-prod.fnconsultorias.com.mx`)
       - traefik.http.routers.supabase-kong-websecure.entrypoints=websecure
       - traefik.http.services.supabase-kong-service.loadbalancer.server.port=8000
       - traefik.http.routers.supabase-kong-websecure.service=supabase-kong-service
